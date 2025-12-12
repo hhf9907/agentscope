@@ -4,7 +4,8 @@ streaming way."""
 import asyncio
 import os
 
-from agentscope.agent import ReActAgent
+from typing import Any
+from agentscope.agent import ReActAgent, AgentBase
 from agentscope.formatter import DashScopeChatFormatter
 from agentscope.memory import InMemoryMemory
 from agentscope.message import Msg
@@ -16,6 +17,18 @@ from agentscope.tool import (
     view_text_file,
     execute_python_code,
 )
+
+# 创建两个前置回复钩子
+def instance_pre_print_hook(
+    self: AgentBase,
+    kwargs: dict[str, Any],
+) -> dict[str, Any]:
+    """修改消息内容的前置回复钩子。"""
+
+    msg = kwargs.get("msg")
+    print(msg)
+
+    return kwargs
 
 
 async def main() -> None:
@@ -31,8 +44,8 @@ async def main() -> None:
         # Change the model and formatter together if you want to try other
         # models
         model=DashScopeChatModel(
-            api_key=os.environ.get("DASHSCOPE_API_KEY"),
-            model_name="qwen-max",
+            api_key=os.environ.get("DASHSCOPE_API_KEY", "sk-aeb7fc8e9d614863b86d3f2c7e0ac70d"),
+            model_name="qwen3-vl-plus",
             enable_thinking=False,
             stream=True,
         ),
@@ -41,22 +54,36 @@ async def main() -> None:
         memory=InMemoryMemory(),
     )
 
+    agent.register_instance_hook(
+        hook_type="pre_print",
+        hook_name="test_pre_print",
+        hook=instance_pre_print_hook,
+    )
+
     # Prepare a user message
     user_msg = Msg(
         "user",
-        "Hi! Who are you?",
+        "请你写一篇一千字的作文，题目是： 我的父亲！",
         "user",
     )
 
-    # We disable the terminal printing to avoid messy outputs
     agent.set_console_output_enabled(False)
 
-    # obtain the printing messages from the agent in a streaming way
-    async for msg, last in stream_printing_messages(
-        agents=[agent],
-        coroutine_task=agent(user_msg),
-    ):
-        print(msg, last)
+    res = await agent(user_msg)
+
+    print("响应内容：", res.content)
+    agent.clear_instance_hooks()
+
+    # We disable the terminal printing to avoid messy outputs
+    # agent.set_console_output_enabled(False)
+    #
+    # # obtain the printing messages from the agent in a streaming way
+    # async for msg, last in stream_printing_messages(
+    #     agents=[agent],
+    #     coroutine_task=agent(user_msg),
+    # ):
+    #     print(msg, last)
+
 
 
 asyncio.run(main())

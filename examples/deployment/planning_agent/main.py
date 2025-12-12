@@ -56,7 +56,7 @@ Your primary purpose is to break down complicated tasks into manageable subtasks
 
 ### Important Constraints
 1. DO NOT TRY TO SOLVE THE SUBTASKS DIRECTLY yourself.
-2. Always follow the plan sequence.
+2. Always follow the plan sequence.a
 3. DO NOT finish the plan until all subtasks are finished.
 """,  # noqa: E501
         model=DashScopeChatModel(
